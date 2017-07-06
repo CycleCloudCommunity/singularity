@@ -128,12 +128,12 @@ F. Testing the Cluster
     $ cyclecloud connect master -c singularity
 
 
-2. List the docker images
+2. Create a simple singularity container based on a Centos 7 docker image
 ::
 
-    docker images
+    $ singularity pull docker://centos:7
 
-3. Start the docker image
+3. Start a shell in the container
 ::
 
-    nvidia-docker run -it NAME /bin/bash
+    $ singularity shell centos-7.img
