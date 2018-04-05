@@ -1,6 +1,6 @@
-############################
+###########################################
 ## Singularity PBSPro Configuration File ##
-############################
+###########################################
 
 [parameters General Settings]
 Order = 10
@@ -170,7 +170,6 @@ Autoscale = $Autoscale
 
     AdditionalClusterInitSpecs = $DefaultClusterInitSpecs
     
-        [[[cluster-init demo_site:users:1.0.0]]]
         [[[cluster-init singularity:default:1.0.0]]]
 
     [[node master]]
@@ -212,7 +211,7 @@ Autoscale = $Autoscale
 
 
         [[[configuration]]]
-         run_list = role[pbspro_execute_role]
+        run_list = role[pbspro_execute_role]
 
         [[[network-interface eth0]]]
         AssociatePublicIpAddress = false
