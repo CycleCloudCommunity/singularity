@@ -11,6 +11,8 @@ myplatform = node[:platform]
 myplatform = "centos" if myplatform == "redhat" or myplatform == "amazon"
 platform_version = node[:platform_version]
 
+package "squashfs-tools"
+
 # TODO : First check if pre-built packages exist
 #      : Need to figure out rpm and deb package naming
 
@@ -38,6 +40,7 @@ platform_version = node[:platform_version]
 
 # ELSE build from source
 include_recipe 'build-essential'
+
 jetpack_download "singularity-#{VERSION}.tar.gz" do
   project "singularity"
   not_if { ::File.exist?("#{node[:jetpack][:downloads]}/singularity-#{VERSION}.tar.gz") }
