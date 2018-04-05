@@ -1,1 +1,1 @@
-default[:singularity][:version] = "2.3"
+default[:singularity][:version] = "2.4.5"

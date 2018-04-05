@@ -12,6 +12,8 @@ Order = 10
         [[[parameter CloudProvider]]]
         Label = Cloud Provider
         ParameterType = Cloud.Provider
+	DefaultValue = azure
+	Hidden = true
 
         [[[parameter Credentials]]]
         Description = The credentials for the cloud provider
@@ -21,6 +23,14 @@ Order = 10
         Label = Region
         Description = Deployment Location
         ParameterType = Cloud.Region
+	DefaultValue = westus2
+
+        [[[parameter KeyPairLocation]]]
+        Label = Keypair Path
+        Description = The path to the private SSH key to use for the `cyclecloud` user on the nodes.
+        DefaultValue = /opt/cycle_server/.ssh/cyclecloud.pem
+        Required = True
+
 
 
 [parameters Cluster Software]
@@ -36,49 +46,23 @@ Order = 20
         Config.OS = linux
         DefaultValue = cycle.image.centos7
 
-        [[[parameter ClusterInit]]]
+        [[[parameter DefaultClusterInitSpecs]]]
+        Label = Default Specs
+        Description = Cluster init specs to apply to all nodes
+        ParameterType = Cloud.ClusterInitSpecs
+
+        [[[parameter MasterSpecs]]]
         Label = Cluster-Init
         DefaultValue = =undefined
-        Description = "If set, apply a cluster-init configuration.  Leave blank to run without cluster-init."
-        ParameterType = Cloud.ClusterInit
-
-        [[[parameter ChefRepoVersion]]]
-        Label = Custom Chef
+        Description = Cluster init specs to apply to the master node
+        ParameterType = Cloud.ClusterInitSpecs
+    
+        [[[parameter ExecuteSpecs]]]
+        Label = Cluster-Init
         DefaultValue = =undefined
-        Description = "If set, use a custom chef version from your Locker."
-        ParameterType = Cloud.ChefRepo
-
-    [[parameters Node Access]]
-    Description = "Specify the credentials required for access to the node.  The Keypair Path specifies the path on local machines for cyclecloud CLI access."
-    Order = 20
-
-        [[[parameter awsKeypair]]]
-        Label = AWS Keypair
-        Description = The keypair to connect with
-        ParameterType = AWS.Keypair
-        DefaultValue = cyclecloud
-        Conditions.Required := CloudProvider === "AWS"
-        Conditions.Excluded := CloudProvider !== "AWS"
-
-        [[[parameter keypairLocation]]]
-        Label = Keypair Path
-        Description = The path to the keypair
-        DefaultValue = ~/.ssh/cyclecloud.pem
-        Required = True
-
-        [[[parameter Username]]]
-        Label = Username
-        Description = The username for the built-in local user on all nodes for direct ssh access.
-        DefaultValue = cyclecloud
-        Conditions.Required := (CloudProvider === "Azure" && startswith("cycle.image.win", ImageName))
-        Conditions.Excluded := !(CloudProvider === "Azure" && startswith("cycle.image.win", ImageName))
-
-        [[[parameter Password]]]
-        Label = Password
-        ParameterType = Password
-        Description = The password for the built-in local user on all nodes for direct ssh access.
-        Conditions.Required := (CloudProvider === "Azure" && startswith("cycle.image.win", ImageName))
-        Conditions.Excluded := !(CloudProvider === "Azure" && startswith("cycle.image.win", ImageName))
+        Description = Cluster init specs to apply to execute nodes
+        ParameterType = Cloud.ClusterInitSpecs
+	
 
 [parameters Compute Backend]
 Order = 30
@@ -92,20 +76,14 @@ Order = 30
         Description = The machine type for scheduler master and shared filer.
         ParameterType = Cloud.MachineType
             [[[[record Config.ProviderDefaults]]]]
-            AWS = m3.large
             Azure = Standard_A4
-            Azure_classic = A4
-            GCP = n1-standard-4
 
         [[[parameter ExecuteMachineType]]]
         Label = Execute Type
         Description = The machine type for execute nodes
         ParameterType = Cloud.MachineType
             [[[[record Config.ProviderDefaults]]]]
-            AWS = m3.large
             Azure = Standard_A4
-            Azure_classic = A4
-            GCP = n1-standard-4
 
     [[parameters Auto-Scaling]]
     Description = "The cluster can autoscale to the workload, adding execute hosts as jobs are queued. To enable this check the box below and choose the initial and maximum core counts for the cluster"
@@ -135,36 +113,21 @@ Order = 30
         Config.MaxValue = 5000
         Config.IntegerOnly = true
 
-    [[parameters AWS Spot Market]]
-    Description = "To use spot instances check the box and enter a bid price below, otherwise on-demand instances will be used"
-    Conditions.Excluded := CloudProvider !== "AWS"
+    [[parameters Azure Low Priority]]
+    Description = "To use low priority instances check the box, otherwise on-demand instances will be used"
+    Conditions.Excluded := CloudProvider !== "Azure"
     Order = 30
 
-        [[[parameter awsUseSpot]]]
-        Label = Use Spot Instances
+        [[[parameter azureUseLowPrio]]]
+        Label = Use Low Prio Instances
         DefaultValue = false
         Widget.Plugin = pico.form.BooleanCheckBox
-        Widget.Label = Use spot instances for execute hosts
+        Widget.Label = Use low priority instances for execute hosts
 
-        [[[parameter awsBidPrice]]]
-        Label = Bid Price
-        Config.Plugin = pico.form.NumberTextBox
-        Config.MinValue = 0
-        Config.MaxValue = 5.0
-        Description = How much to pay for execute instances
-        Conditions.Excluded := awsUseSpot isnt true
+        [[[parameter azureBatchAccount]]]
+        Label = Azure Batch Account
+        Conditions.Excluded := azureUseLowPrio isnt true        
 
-
-    [[parameters GCP Preemptible Instances]]
-    Description = "To use premptible instances check the box, otherwise regular instances will be used"
-    Conditions.Excluded := CloudProvider !== "GCP"
-    Order = 40
-
-        [[[parameter Preemptible]]]
-        Label = Use Preemptible Instances
-        DefaultValue = false
-        Widget.Plugin = pico.form.BooleanCheckBox
-        Widget.Label = Use preemptible instances for execute hosts
 
 [parameters Networking]
 Order = 40
@@ -178,62 +141,17 @@ Order = 40
         Widget.Plugin = pico.form.BooleanCheckBox
         Widget.Label = Allow cloud instances to report back their state
 
-
-    [[parameters AWS]]
-    Order = 20
-    Conditions.Excluded := CloudProvider !== "AWS"
-    Description = "Optional use of VPC components. Without specifying a subnet or security group the hosts will be started in the default region, VPC and security group."
-
-        [[[parameter awsSubnetId]]]
-        Label = VPC Subnet
-        Description = The subnet ID to use when in a VPC environment
-        ParameterType = AWS.Subnet
-
-        [[[parameter awsSecurityGroups]]]
-        Label = Security Group(s)
-        Description = "The security group ID(s) to use when in a VPC environment. Can be comma-separated list for multiple security groups. eg: sg-a0000001, sg-a0000002."
-        ParameterType = AWS.SecurityGroupList
-
-    [[parameters GCP Network]]
-    Order = 30
-    Conditions.Excluded := CloudProvider !== "GCP"
-    Description = "Apply Instance Tags"
-
-        [[[parameter gcpTags]]]
-        Label = Tags
-        Description = GCP Instance Tags
-        ParameterType = StringList
-
-    [[parameters Azure Virtual Network Configuration]]
-    Order = 40
-    Conditions.Excluded := CloudProvider !== "Azure"
-
-        [[[parameter azureSubnetId]]]
+        [[[parameter SubnetId]]]
         Label = Subnet ID
         Description = Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
         Conditions.Required := CloudProvider === "Azure"
         Conditions.Excluded := CloudProvider !== "Azure"
         ParameterType = Azure.Subnet
 
-    [[parameters Azure Classic Virtual Network Configuration]]
-    Order = 50
-    Conditions.Excluded := CloudProvider !== "Azure_classic"
-
-        [[[parameter azureVirtualNetwork]]]
-        Label = VNet Name
-        Description = Azure Virtual Network
-        Conditions.Required := CloudProvider === "Azure_classic"
-        Conditions.Excluded := CloudProvider !== "Azure_classic"
-
-        [[[parameter azureSubnetName]]]
-        Label = Subnet
-        Description = Azure subnet name
-        Conditions.Required := CloudProvider === "Azure_classic"
-        Conditions.Excluded := CloudProvider !== "Azure_classic"
 
 [cluster Singularity]
 FormLayout = selectionpanel
-#IconUrl = static/cloud/cluster/ui/ClusterIcon/ogs-icon.png
+IconUrl = https://s3.amazonaws.com/download.cyclecomputing.com/logos/singularity-192x192.png
 
 # Enable/disable autoscaling
 # The scheduler load will determine the number of execute machines that are started, machines will terminate themselves if they are idle
@@ -244,49 +162,26 @@ Autoscale = $Autoscale
     # You can create other nodes like this by adding Abstract = true to them and adding
     # Extends = foo to the nodes that should inherit the definitions from foo.
     [[node defaults]]
-    Credentials = $Credentials
-
+    Credentials = $Credentials    
     ImageName = $ImageName
-
-    SubnetId = ${IfThenElse(CloudProvider==="Azure", azureSubnetId, awsSubnetId)}
+    SubnetId = $SubnetId
     Region = $Region
-
-    # EC2
-    KeyPair = $awsKeypair
     KeyPairLocation = $keypairLocation
-    SecurityGroups = $awsSecurityGroups
 
-    # Azure
-    # Azure Classic
-    Azure.VirtualNetwork = ${IfThenElse(CloudProvider==="Azure_classic", azureVirtualNetwork, undefined())}
-    Azure.SubnetName = ${IfThenElse(CloudProvider==="Azure_classic", azureSubnetName, undefined())}
-    Azure.IaaS = ${IfThenElse(CloudProvider==="Azure_classic", true, undefined())}
-
-    Username = $Username
-    Password = $Password
-
-
-
-    # GCP
-    TagList = $gcpTags
-
-        [[[configuration]]]
-        # You can specify Chef attributes using dot notation if needed. For example, you
-        # can use it to change the default CycleServer admin password (defaults to cluster name):
-        # cyclecloud.cluster.user.name = cluster.user
-        # cyclecloud.cluster.user.password = abc;123
-        # cyclecloud.cluster.user.uid = 55555
-        # cyclecloud.cluster.user.gid = 55555
-
+    AdditionalClusterInitSpecs = $DefaultClusterInitSpecs
+    
+        [[[cluster-init demo_site:users:1.0.0]]]
         [[[cluster-init singularity:default:1.0.0]]]
 
     [[node master]]
     MachineType = $MasterMachineType
     IsReturnProxy = $ReturnProxy
 
+    AdditionalClusterInitSpecs = $MasterClusterInitSpecs
+    
         [[[configuration]]]
         # This is the Chef runlist to use for the node, to customize this add customized recipes and/or roles
-        run_list = role[pbspro_master_role],recipe[singularity::default]
+        run_list = role[pbspro_master_role]
 
         # cycle_server.admin.pass=123456
 
@@ -309,15 +204,16 @@ Autoscale = $Autoscale
     # The maximum number of cores to start when the cluster is configured for autoscaling
     MaxCoreCount = $MaxExecuteCoreCount
 
-    # AWS Spot Market bid prices - uncomment and enter the bid price for the nodes to provision
-    BidPrice = ${ifThenElse(awsUseSpot == true, awsBidPrice, undefined)}
+    # Azure Low Priority Instances?
+    BatchAccount = $azureBatchAccount
+    Interruptible = $azureUseLowPrio
 
-    # Use GCP Premptible Instances?
-    Preemptible = ${ifThenElse(Preemptible == true, Preemptible, undefined)}
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+
 
         [[[configuration]]]
-         run_list = role[pbspro_execute_role],recipe[singularity::default]
+         run_list = role[pbspro_execute_role]
 
-        [[[input-endpoint SSH]]]
-        PrivatePort = 22
-        PublicPort = 55100
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = false
+	
