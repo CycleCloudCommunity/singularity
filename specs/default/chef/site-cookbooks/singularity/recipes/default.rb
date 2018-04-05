@@ -11,25 +11,6 @@ myplatform = node[:platform]
 myplatform = "centos" if myplatform == "redhat" or myplatform == "amazon"
 platform_version = node[:platform_version]
 
-
-jetpack_download "singularity-#{VERSION}.tar.gz" do
-  project "singularity"
-  not_if { ::File.exist?("#{node[:jetpack][:downloads]}/singularity-#{VERSION}.tar.gz") }
-end
-
-
-bash 'make singularity' do
-  cwd "/tmp"
-  code <<-EOH
-       tar xzvf #{node[:jetpack][:downloads]}/singularity-#{VERSION}.tar.gz
-       cd singularity-#{VERSION}
-       ./configure --prefix=/usr/local
-       make
-       make install
-       EOH
-  not_if { ::File.exist?("/usr/local/libexec/singularity") }
-end
-
 # TODO : First check if pre-built packages exist
 #      : Need to figure out rpm and deb package naming
 
@@ -54,3 +35,24 @@ end
 #     action :install
 #   end
 # end
+
+# ELSE build from source
+include_recipe 'build-essential'
+jetpack_download "singularity-#{VERSION}.tar.gz" do
+  project "singularity"
+  not_if { ::File.exist?("#{node[:jetpack][:downloads]}/singularity-#{VERSION}.tar.gz") }
+end
+
+
+bash 'make singularity' do
+  cwd "/tmp"
+  code <<-EOH
+       tar xzvf #{node[:jetpack][:downloads]}/singularity-#{VERSION}.tar.gz
+       cd singularity-#{VERSION}
+       ./configure --prefix=/usr/local
+       make
+       make install
+       EOH
+  not_if { ::File.exist?("/usr/local/libexec/singularity") }
+end
+
