@@ -1,6 +1,16 @@
-###########################################
-## Singularity PBSPro Configuration File ##
-###########################################
+#############################################
+## Singularity + PBSPro Configuration File ##
+#############################################
+
+[parameters About]
+Order = 1
+
+    [[parameters About BeeGFS]]
+
+        [[[parameter Singularity]]]
+        HideLabel = true
+        Config.Plugin = pico.widget.HtmlTemplateWidget
+        Config.Template := "<table><tr><td><img src='https://s3.amazonaws.com/download.cyclecomputing.com/logos/singularity-192x192.png' width='192' height='192'></td></tr><tr><td><p>Singularity is a system for building and running Linux Containers. See the <a href=\"https://singularity.lbl.gov/\" target=\"_blank\">Singularity project site</a>for an overview.</p></td></tr></table>"
 
 [parameters General Settings]
 Order = 10
@@ -149,7 +159,7 @@ Order = 40
         ParameterType = Azure.Subnet
 
 
-[cluster Singularity]
+[cluster PBS-Singularity]
 FormLayout = selectionpanel
 IconUrl = https://s3.amazonaws.com/download.cyclecomputing.com/logos/singularity-192x192.png
 
