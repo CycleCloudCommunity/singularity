@@ -22,18 +22,23 @@ end
 #      : Need to figure out rpm and deb package naming
 
 if myplatform == "centos"
-  singularity_rpm="singularity-#{VERSION}-1.el7.centos.x86_64.rpm"
-  singularity_rpm_path="#{node[:jetpack][:downloads]}/#{singularity_rpm}"
-
+  singularity_rpms=["singularity-runtime-#{VERSION}-1.el7.centos.x86_64.rpm", "singularity-#{VERSION}-1.el7.centos.x86_64.rpm"]
+  singularity_rpm_path="#{node[:jetpack][:downloads]}/#{singularity_rpms[1]}"
+  
   # Check if the RPM is available
-#   jetpack_download singularity_rpm do
-#     project "singularity"
-#     not_if { ::File.exist?(singularity_rpm_path) }
-#   end
-  execute "#{node['cyclecloud']['jetpack']['executable']} download #{singularity_rpm} #{singularity_rpm_path}  --project singularity" do
-    returns [0, 1]
-    not_if { ::File.exists?(singularity_rpm_path) }
+  singularity_rpms.each do |singularity_rpm|
+    singularity_rpm_path="#{node[:jetpack][:downloads]}/#{singularity_rpm}"
+
+#     jetpack_download singularity_rpm do
+#       project "singularity"
+#       not_if { ::File.exist?(singularity_rpm_path) }
+#     end
+    execute "#{node['cyclecloud']['jetpack']['executable']} download #{singularity_rpm} #{singularity_rpm_path}  --project singularity" do
+      returns [0, 1]
+      not_if { ::File.exists?(singularity_rpm_path) }
+    end
   end
+
 
   # ELSE build from source
   jetpack_download "singularity-#{VERSION}.tar.gz" do
@@ -44,11 +49,11 @@ if myplatform == "centos"
 
   %w"automake rpm-build".each do |pkg|
     package pkg do
-      not_if ::File.exists?(singularity_rpm_path)
+      not_if { ::File.exists?(singularity_rpm_path) }
     end
   end  
 
-  bash 'make singularity rpm' do
+  bash 'make singularity rpms' do
     cwd "/tmp"
     code <<-EOH
          set -e
@@ -58,15 +63,20 @@ if myplatform == "centos"
          ./configure
          make dist
          rpmbuild -ta singularity-*.tar.gz
-         mv ~/rpmbuild/RPMS/*/#{singularity_rpm} #{singularity_rpm_path}
+         mv ~/rpmbuild/RPMS/*/*rpm #{node[:jetpack][:downloads]}/
          EOH
     not_if { ::File.exists?( singularity_rpm_path ) }
   end
 
-  yum_package "#{singularity_rpm}" do
-    source "#{singularity_rpm_path}"
-    action :install
+  singularity_rpms.each do |singularity_rpm|
+    singularity_rpm_path="#{node[:jetpack][:downloads]}/#{singularity_rpm}"
+
+    yum_package "#{singularity_rpm}" do
+      source "#{singularity_rpm_path}"
+      action :install
+    end
   end
+  
 else
   singularity_deb="singularity-container_#{VERSION}-1_amd64.deb"
   singularity_deb_path="#{node[:jetpack][:downloads]}/#{singularity_deb}"
@@ -91,7 +101,7 @@ else
 
   %w"debhelper dh-autoreconf help2man".each do |pkg|
     package pkg do
-      not_if ::File.exists?(singularity_deb_path)
+      not_if { ::File.exists?(singularity_deb_path) }
     end
   end
   
