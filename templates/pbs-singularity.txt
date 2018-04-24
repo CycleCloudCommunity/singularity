@@ -61,13 +61,13 @@ Order = 20
         Description = Cluster init specs to apply to all nodes
         ParameterType = Cloud.ClusterInitSpecs
 
-        [[[parameter MasterSpecs]]]
+        [[[parameter MasterClusterInitSpecs]]]
         Label = Cluster-Init
         DefaultValue = =undefined
         Description = Cluster init specs to apply to the master node
         ParameterType = Cloud.ClusterInitSpecs
     
-        [[[parameter ExecuteSpecs]]]
+        [[[parameter ExecuteClusterInitSpecs]]]
         Label = Cluster-Init
         DefaultValue = =undefined
         Description = Cluster init specs to apply to execute nodes
