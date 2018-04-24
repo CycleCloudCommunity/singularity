@@ -5,7 +5,7 @@
 [parameters About]
 Order = 1
 
-    [[parameters About BeeGFS]]
+    [[parameters About Singularity]]
 
         [[[parameter Singularity]]]
         HideLabel = true
