@@ -46,6 +46,18 @@ Order = 10
 [parameters Cluster Software]
 Order = 20
 
+    [[parameters SingularityParams ]]
+    Description = "Section for configuring Singularity versions etc"
+    Order = 5
+
+        [[[parameter SingularityVersion]]]
+        Label = Singularity Version
+        Description = Singularity version to use
+        DefaultValue = 2.4.5
+
+
+
+
     [[parameters Software]]
     Description = "Specify the scheduling software, and base OS installed on all nodes, and optionally the cluster-init and chef versions from your Locker."
     Order = 10
@@ -181,6 +193,9 @@ Autoscale = $Autoscale
     AdditionalClusterInitSpecs = $DefaultClusterInitSpecs
     
         [[[cluster-init singularity:default:1.0.0]]]
+
+        [[[configuration]]]
+        singularity.version = $SingularityVersion
 
     [[node master]]
     MachineType = $MasterMachineType
