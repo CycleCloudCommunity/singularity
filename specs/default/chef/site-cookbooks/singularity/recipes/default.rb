@@ -13,6 +13,7 @@ myplatform = "centos" if myplatform == "redhat" or myplatform == "amazon"
 platform_version = node[:platform_version]
 
 package "squashfs-tools"
+package "libarchive-devel"
 
 directory node[:jetpack][:downloads] do
   recursive true
