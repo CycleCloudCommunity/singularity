@@ -2,6 +2,55 @@
 ## Singularity + PBSPro Configuration File ##
 #############################################
 
+[cluster PBS-Singularity]
+FormLayout = selectionpanel
+IconUrl = https://github.com/CycleCloudCommunity/singularity/raw/master/logo.png
+
+Autoscale = $Autoscale
+
+    [[node defaults]]
+    Credentials = $Credentials    
+    ImageName = $ImageName
+    SubnetId = $SubnetId
+    Region = $Region
+    KeyPairLocation = $KeyPairLocation
+
+    AdditionalClusterInitSpecs = $DefaultClusterInitSpecs
+    
+        [[[cluster-init singularity:default:1.0.0]]]
+
+        [[[configuration]]]
+        singularity.version = $SingularityVersion
+
+    [[node master]]
+    MachineType = $MasterMachineType
+    IsReturnProxy = $ReturnProxy
+    AdditionalClusterInitSpecs = $MasterClusterInitSpecs
+    
+        [[[configuration]]]
+        run_list = role[pbspro_master_role]
+
+        [[[input-endpoint ganglia]]]
+        PrivatePort = 8652
+        PublicPort = 8652
+
+
+    [[nodearray execute]]
+    MachineType = $ExecuteMachineType
+    MaxCoreCount = $MaxExecuteCoreCount
+
+    Interruptible = $UseLowPrio
+    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
+
+
+        [[[configuration]]]
+        run_list = role[pbspro_execute_role]
+
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = false
+	
+
+
 [parameters About]
 Order = 1
 
@@ -10,41 +59,83 @@ Order = 1
         [[[parameter Singularity]]]
         HideLabel = true
         Config.Plugin = pico.widget.HtmlTemplateWidget
-        Config.Template := "<table><tr><td><img src='https://s3.amazonaws.com/download.cyclecomputing.com/logos/singularity-192x192.png' width='192' height='192'></td></tr><tr><td><p>Singularity is a system for building and running Linux Containers. See the <a href=\"https://singularity.lbl.gov/\" target=\"_blank\">Singularity project site</a>for an overview.</p></td></tr></table>"
+        Config.Template := "<table><tr><td><img src='https://github.com/CycleCloudCommunity/singularity/raw/master/logo.png' width='192' height='192'></td></tr><tr><td><p>Singularity is a system for building and running Linux Containers. See the <a href=\"https://singularity.lbl.gov/\" target=\"_blank\">Singularity project site</a>for an overview.</p></td></tr></table>"
 
-[parameters General Settings]
+        [[[parameter Readme]]]
+        HideLabel = true
+        Config.Plugin = pico.widget.HtmlTemplateWidget
+        Config.Template := "Follow the instructions in the <a href=\"https://github.com/CycleCloudCommunity/singularity/\" target=\"_blank\">README</a> for details on instructions on extending and configuring the Project for your environment."
+
+
+[parameters Required Settings]
 Order = 10
 
-    [[parameters Cloud Service Provider Configuration]]
-    Description = Configure the Cloud Provider account options.
-    Order = 10
+    [[parameters Virtual Machines ]]
+    Description = "The cluster, in this case, has two roles: the scheduler master-node with shared filer and the execute hosts. Configure which VM types to use based on the requirements of your application."
+    Order = 20
 
-        [[[parameter CloudProvider]]]
-        Label = Cloud Provider
-        ParameterType = Cloud.Provider
-	DefaultValue = azure
-	Hidden = true
-
-        [[[parameter Credentials]]]
-        Description = The credentials for the cloud provider
-        ParameterType = Cloud.Credentials
 
         [[[parameter Region]]]
         Label = Region
         Description = Deployment Location
         ParameterType = Cloud.Region
-	DefaultValue = westus2
+        DefaultValue = westus2
 
-        [[[parameter KeyPairLocation]]]
-        Label = Keypair Path
-        Description = The path to the private SSH key to use for the `cyclecloud` user on the nodes.
-        DefaultValue = /opt/cycle_server/.ssh/cyclecloud.pem
-        Required = True
+        [[[parameter MasterMachineType]]]
+        Label = Master VM Type
+        Description = The VM type for scheduler master and shared filer.
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_D12_v2
+
+        [[[parameter ExecuteMachineType]]]
+        Label = Execute VM Type
+        Description = The VM type for execute nodes
+        ParameterType = Cloud.MachineType
+        DefaultValue = Standard_F2s_v2
 
 
+    [[parameters Auto-Scaling]]
+    Description = "The cluster can autoscale to the workload, adding execute hosts as jobs are queued. To enable this check the box below and choose the initial and maximum core counts for the cluster"
+    Order = 30
 
-[parameters Cluster Software]
+        [[[parameter Autoscale]]]
+        Label = Autoscale
+        DefaultValue = true
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Start and stop execute instances automatically
+
+        [[[parameter MaxExecuteCoreCount]]]
+        Label = Max Cores
+        Description = The total number of execute cores to start
+        DefaultValue = 100
+        Config.Plugin = pico.form.NumberTextBox
+        Config.MinValue = 1
+        Config.IntegerOnly = true
+
+        [[[parameter UseLowPrio]]]
+        Label = Use Low Prio Instances
+        DefaultValue = false
+        Widget.Plugin = pico.form.BooleanCheckBox
+        Widget.Label = Use low priority instances for execute hosts
+
+    [[parameters Networking]]
+    Order = 40
+
+        [[[parameter SubnetId]]]
+        Label = Subnet ID
+        Description = Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
+        ParameterType = Azure.Subnet
+
+
+[parameters Advanced Settings]
 Order = 20
+
+    [[parameters Azure Settings]]
+    Order = 10 
+
+        [[[parameter Credentials]]]
+        Description = The credentials for the cloud provider
+        ParameterType = Cloud.Credentials
 
     [[parameters SingularityParams ]]
     Description = "Section for configuring Singularity versions etc"
@@ -54,8 +145,6 @@ Order = 20
         Label = Singularity Version
         Description = Singularity version to use
         DefaultValue = 2.4.5
-
-
 
 
     [[parameters Software]]
@@ -86,158 +175,24 @@ Order = 20
         ParameterType = Cloud.ClusterInitSpecs
 	
 
-[parameters Compute Backend]
-Order = 30
-
-    [[parameters Instance Types]]
-    Description = "The cluster, in this case, has two roles: the scheduler master-node with shared filer and the execute hosts. Configure which instance types to use based on the requirements of your application."
-    Order = 10
-
-        [[[parameter MasterMachineType]]]
-        Label = Master Type
-        Description = The machine type for scheduler master and shared filer.
-        ParameterType = Cloud.MachineType
-            [[[[record Config.ProviderDefaults]]]]
-            Azure = Standard_A4
-
-        [[[parameter ExecuteMachineType]]]
-        Label = Execute Type
-        Description = The machine type for execute nodes
-        ParameterType = Cloud.MachineType
-            [[[[record Config.ProviderDefaults]]]]
-            Azure = Standard_A4
-
-    [[parameters Auto-Scaling]]
-    Description = "The cluster can autoscale to the workload, adding execute hosts as jobs are queued. To enable this check the box below and choose the initial and maximum core counts for the cluster"
-    Order = 20
-
-        [[[parameter Autoscale]]]
-        Label = Autoscale
-        DefaultValue = true
-        Widget.Plugin = pico.form.BooleanCheckBox
-        Widget.Label = Start and stop execute instances automatically
-
-        [[[parameter InitialExecuteCoreCount]]]
-        Label = Initial Cores
-        Description = The number of execute cores to launch on startup
-        DefaultValue = 0
-        Config.Plugin = pico.form.NumberTextBox
-        Config.MinValue = 0
-        Config.MaxValue = 5000
-        Config.IntegerOnly = true
-
-        [[[parameter MaxExecuteCoreCount]]]
-        Label = Max Cores
-        Description = The total number of execute cores to start
-        DefaultValue = 10
-        Config.Plugin = pico.form.NumberTextBox
-        Config.MinValue = 1
-        Config.MaxValue = 5000
-        Config.IntegerOnly = true
-
-    [[parameters Azure Low Priority]]
-    Description = "To use low priority instances check the box, otherwise on-demand instances will be used"
-    Conditions.Excluded := CloudProvider !== "Azure"
-    Order = 30
-
-        [[[parameter azureUseLowPrio]]]
-        Label = Use Low Prio Instances
-        DefaultValue = false
-        Widget.Plugin = pico.form.BooleanCheckBox
-        Widget.Label = Use low priority instances for execute hosts
-
-        [[[parameter azureBatchAccount]]]
-        Label = Azure Batch Account
-        Conditions.Excluded := azureUseLowPrio isnt true        
-
-
-[parameters Networking]
-Order = 40
-
-    [[parameters General]]
-    Order = 10
+    [[parameters Advanced Networking]]
+    Description = Advanced networking settings
 
         [[[parameter ReturnProxy]]]
         Label = Return Proxy
+        DefaultValue = false
+        ParameterType = Boolean
+        Config.Label = Use SSH tunnel to connect to CycleCloud (required if direct access is blocked)
+
+        [[[parameter UsePublicNetwork]]]
+        Label = Public Head Node
         DefaultValue = true
-        Widget.Plugin = pico.form.BooleanCheckBox
-        Widget.Label = Allow cloud instances to report back their state
+        ParameterType = Boolean
+        Config.Label = Access master node from the Internet
 
-        [[[parameter SubnetId]]]
-        Label = Subnet ID
-        Description = Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
-        Conditions.Required := CloudProvider === "Azure"
-        Conditions.Excluded := CloudProvider !== "Azure"
-        ParameterType = Azure.Subnet
+        [[[parameter KeyPairLocation]]]
+        Label = Keypair Path
+        Description = The path to the private SSH key to use for the `cyclecloud` user on linux nodes.
+        DefaultValue = ~/.ssh/cyclecloud.pem
+        Required = True
 
-
-[cluster PBS-Singularity]
-FormLayout = selectionpanel
-IconUrl = https://s3.amazonaws.com/download.cyclecomputing.com/logos/singularity-192x192.png
-
-# Enable/disable autoscaling
-# The scheduler load will determine the number of execute machines that are started, machines will terminate themselves if they are idle
-# and approaching a billing cycle.
-Autoscale = $Autoscale
-
-    # defines default values used for all nodes. This is inherited automatically by all nodes.
-    # You can create other nodes like this by adding Abstract = true to them and adding
-    # Extends = foo to the nodes that should inherit the definitions from foo.
-    [[node defaults]]
-    Credentials = $Credentials    
-    ImageName = $ImageName
-    SubnetId = $SubnetId
-    Region = $Region
-    KeyPairLocation = $keypairLocation
-
-    AdditionalClusterInitSpecs = $DefaultClusterInitSpecs
-    
-        [[[cluster-init singularity:default:1.0.0]]]
-
-        [[[configuration]]]
-        singularity.version = $SingularityVersion
-
-    [[node master]]
-    MachineType = $MasterMachineType
-    IsReturnProxy = $ReturnProxy
-
-    AdditionalClusterInitSpecs = $MasterClusterInitSpecs
-    
-        [[[configuration]]]
-        # This is the Chef runlist to use for the node, to customize this add customized recipes and/or roles
-        run_list = role[pbspro_master_role]
-
-        # cycle_server.admin.pass=123456
-
-        # Configure Azure external input endpoints (for example SSH)
-        [[[input-endpoint SSH]]]
-        PrivatePort = 22
-        PublicPort = 22
-
-        [[[input-endpoint ganglia]]]
-        PrivatePort = 8652
-        PublicPort = 8652
-
-
-    [[nodearray execute]]
-    MachineType = $ExecuteMachineType
-
-    # The initial number of cores of this type to start when the cluster starts
-    InitialCoreCount= $InitialExecuteCoreCount
-
-    # The maximum number of cores to start when the cluster is configured for autoscaling
-    MaxCoreCount = $MaxExecuteCoreCount
-
-    # Azure Low Priority Instances?
-    BatchAccount = $azureBatchAccount
-    Interruptible = $azureUseLowPrio
-
-    AdditionalClusterInitSpecs = $ExecuteClusterInitSpecs
-
-
-        [[[configuration]]]
-        run_list = role[pbspro_execute_role]
-
-        [[[network-interface eth0]]]
-        AssociatePublicIpAddress = false
-	
