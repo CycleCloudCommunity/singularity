@@ -23,7 +23,7 @@ end
 #      : Need to figure out rpm and deb package naming
 
 if myplatform == "centos"
-  singularity_rpms=["singularity-runtime-#{VERSION}-1.el7.x86_64.rpm", "singularity-#{VERSION}-1.el7.x86_64.rpm"]
+  singularity_rpms=["singularity-runtime-#{VERSION}-1.el7.centos.x86_64.rpm", "singularity-#{VERSION}-1.el7.centos.x86_64.rpm"]
   singularity_rpm_path="#{node[:jetpack][:downloads]}/#{singularity_rpms[1]}"
   
   # Check if the RPM is available
