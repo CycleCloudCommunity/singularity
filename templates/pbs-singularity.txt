@@ -5,6 +5,7 @@
 [cluster PBS-Singularity]
 FormLayout = selectionpanel
 IconUrl = https://github.com/CycleCloudCommunity/singularity/raw/master/logo.png
+Category = Applications
 
 Autoscale = $Autoscale
 
