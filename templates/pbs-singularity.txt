@@ -31,6 +31,9 @@ Autoscale = $Autoscale
         [[[configuration]]]
         run_list = role[pbspro_master_role]
 
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $UsePublicNetwork
+
         [[[input-endpoint ganglia]]]
         PrivatePort = 8652
         PublicPort = 8652
@@ -60,7 +63,7 @@ Order = 1
         [[[parameter Singularity]]]
         HideLabel = true
         Config.Plugin = pico.widget.HtmlTemplateWidget
-        Config.Template := "<table><tr><td><img src='https://github.com/CycleCloudCommunity/singularity/raw/master/logo.png' width='192' height='192'></td></tr><tr><td><p>Singularity is a system for building and running Linux Containers. See the <a href=\"https://singularity.lbl.gov/\" target=\"_blank\">Singularity project site</a>for an overview.</p></td></tr></table>"
+        Config.Template := "<table><tr><td><img src='https://github.com/CycleCloudCommunity/singularity/raw/master/icon.png' width='192' height='192'></td></tr><tr><td><p>Singularity is a system for building and running Linux Containers. See the <a href=\"https://singularity.lbl.gov/\" target=\"_blank\">Singularity project site</a>for an overview.</p></td></tr></table>"
 
         [[[parameter Readme]]]
         HideLabel = true
@@ -126,6 +129,7 @@ Order = 10
         Label = Subnet ID
         Description = Subnet Resource Path (ResourceGroup/VirtualNetwork/Subnet)
         ParameterType = Azure.Subnet
+        Required = True
 
 
 [parameters Advanced Settings]
@@ -159,18 +163,18 @@ Order = 20
         DefaultValue = cycle.image.centos7
 
         [[[parameter DefaultClusterInitSpecs]]]
-        Label = Default Specs
+        Label = Default Cluster-Init Specs
         Description = Cluster init specs to apply to all nodes
         ParameterType = Cloud.ClusterInitSpecs
 
         [[[parameter MasterClusterInitSpecs]]]
-        Label = Cluster-Init
+        Label = Master Cluster-Init Specs
         DefaultValue = =undefined
         Description = Cluster init specs to apply to the master node
         ParameterType = Cloud.ClusterInitSpecs
     
         [[[parameter ExecuteClusterInitSpecs]]]
-        Label = Cluster-Init
+        Label = Execute Cluster-Init Specs
         DefaultValue = =undefined
         Description = Cluster init specs to apply to execute nodes
         ParameterType = Cloud.ClusterInitSpecs
