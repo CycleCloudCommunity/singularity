@@ -18,7 +18,7 @@ Autoscale = $Autoscale
 
     AdditionalClusterInitSpecs = $DefaultClusterInitSpecs
     
-        [[[cluster-init singularity:default:1.0.0]]]
+        [[[cluster-init cyclecloud/singularity:default:1.0.0]]]
 
         [[[configuration]]]
         singularity.version = $SingularityVersion
